@@ -5,15 +5,23 @@ use uuid::Uuid;
 use viewset::{DefaultRepo, DefaultViewSet, Entity, Service};
 
 #[derive(FromRow, Deserialize, Serialize, Clone, Entity)]
-#[entity(table = "grants", update = "UpdateAbsolute")]
+#[entity(table = "grants",create = "NewAbsolute", update = "UpdateAbsolute")]
 pub struct Absolute {
-    #[entity(skip_update)]
+    #[entity(skip_update,skip_create)]
     pub id: Uuid,
     #[entity(skip_update)]
     pub to_id: Uuid,
     /// Represent u128 permission bit map, represented as str since some db do not support u128
     pub role: Uuid,
     #[entity(skip_update)]
+    pub namespace: Uuid,
+}
+
+#[derive(Serialize, Deserialize,Clone)]
+pub struct NewAbsolute {
+    pub to_id: Uuid,
+    /// Represent u128 permission bit map, represented as str since some db do not support u128
+    pub role: Uuid,
     pub namespace: Uuid,
 }
 

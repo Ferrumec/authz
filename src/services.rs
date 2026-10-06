@@ -7,6 +7,7 @@ use ferrumec::cache::{CacheFactory, Store};
 use sqlx::{Error as SqlxError, Pool, Postgres};
 use std::sync::Arc;
 use uuid::Uuid;
+use crate::admin::NewAbsolute;
 use viewset::{ApiError, Repository};
 
 #[derive(Clone)]
@@ -41,7 +42,6 @@ impl Service {
         };
         Ok(grant.role.as_u128())
     }
-    
 
     /// Grants `request.target` the permission in `request`, unconditionally.
     /// Callers MUST verify the caller is actually authorized (e.g. via
@@ -55,10 +55,21 @@ impl Service {
         if request.permission > 127 {
             return Ok(None);
         }
-        let grant = self.absolute_repo.list_one(filters!("to_id"=>&request.target,"namespace"=>namespace)).await?;
-        let update = grant.grant(request.permission);
+        let to_id = &request.target;
+        let (grants,count) = self.absolute_repo.list(filters!(to_id,namespace)).await?;
+        if count > 0{
+            let grant = grants[0].clone();
+            let update = grant.grant(request.permission);
         self.absolute_repo.update(&grant.id,update.clone()).await?;
         Ok(update.role)
+        }else{
+            let grant = NewAbsolute{
+                to_id:to_id.clone(),namespace:namespace.clone(),role:Uuid::from_u128(1<<request.permission)
+            };
+            self.absolute_repo.create(grant.clone()).await?;
+            Ok(Some(grant.role))
+        }
+        
     }
 
     /// Revokes the permission in `request` from `request.target`'s absolute role.
