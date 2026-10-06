@@ -1,6 +1,6 @@
 use crate::Service;
 use crate::models::{AppState, PermissionReq};
-use actix_web::{HttpResponse, Responder, post, web};
+use actix_web::{HttpResponse, Responder, cookie::Cookie, post, web};
 use actixutils::extractors::ReadSession;
 use serde_json::json;
 use uuid::Uuid;
@@ -56,10 +56,17 @@ pub async fn claim_admin(
 ) -> impl Responder {
     let namespace = path.into_inner();
     let id = sess.id;
-    let _token = match service.claim(namespace, id).await {
-        Ok(r) => r,
+
+    let token = match service.claim(namespace, id).await {
+        Ok(token) => token,
         Err(_) => return HttpResponse::InternalServerError().finish(),
     };
 
-    HttpResponse::Ok().finish()
+    let cookie = Cookie::build("permission", token.to_string())
+        .http_only(true)
+        .secure(true)
+        .path("/")
+        .finish();
+
+    HttpResponse::Ok().cookie(cookie).finish()
 }
