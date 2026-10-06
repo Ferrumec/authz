@@ -127,8 +127,11 @@ impl Service {
             return Ok(false);
         }
 
-        let role = self.get_role(&authority.user, &authority.namespace).await?;
-        let perm_value = 1 << perm_id;
-        Ok(role & perm_value == perm_value)
+        let grant = self
+            .absolute_repo
+            .list_one(filters!("to_id"=>authority.user,"namespace"=>authority.namespace))
+            .await?;
+
+        Ok(grant.has(perm_id))
     }
 }

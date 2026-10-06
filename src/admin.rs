@@ -43,6 +43,11 @@ impl Absolute {
             role: Some(Uuid::from_u128(new)),
         }
     }
+
+    pub(crate) fn has(&self, perm: u8) -> bool {
+        let value = 1 << perm;
+        self.role.as_u128() & value == value
+    }
 }
 
 #[derive(FromRow, Deserialize, Serialize, Clone, Entity)]
