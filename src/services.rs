@@ -41,86 +41,43 @@ impl Service {
         };
         Ok(grant.role.as_u128())
     }
-
-    async fn upsert_role(&self,namespace:&Uuid, to_id: &Uuid, role: u128) -> Result<(), SqlxError> {
-        let role = Uuid::from_u128(role);
-        sqlx::query(
-            r#"
-        INSERT INTO grants (to_id, role, namespace)
-        VALUES ($1, $2, $3)
-        ON CONFLICT(to_id) DO UPDATE SET role = excluded.role
-        "#,
-        )
-        .bind(to_id)
-        .bind(role)
-        .bind(namespace)
-        .execute(&self.db)
-        .await?;
-        Ok(())
-    }
     
 
     /// Grants `request.target` the permission in `request`, unconditionally.
     /// Callers MUST verify the caller is actually authorized (e.g. via
     /// `is_admin_for`) before calling this — it performs no auth check itself.
-    async fn admin_grant_unchecked(
-        &self,
-    namespace: &Uuid,
-        request: PermissionReq,
-    ) -> Result<Option<u128>, SqlxError> {
-        // Validate permission
-        if request.permission > 127 {
-            return Ok(None);
-        }
-        let perm_value = 1 << request.permission;
-        let current_role = self.get_role(&request.target, namespace).await?;
-
-        let new_role = current_role | perm_value;
-        // Grant the permission
-        self.upsert_role(namespace,&request.target, new_role).await?;
-
-        Ok(Some(new_role))
-    }
-
-    /// Revokes the permission in `request` from `request.target`'s absolute role.
-    /// Same caveat as `admin_grant_unchecked`: no auth check performed here.
-    async fn admin_deny_unchecked(
-        &self,
-    namespace: &Uuid,
-        request: PermissionReq,
-    ) -> Result<Option<u128>, SqlxError> {
-        if request.permission > 127 {
-            return Ok(None);
-        }
-        let perm_value = 1 << request.permission;
-
-        let role = self.get_role(&request.target, namespace).await?;
-
-        let role = role & !perm_value;
-        self.upsert_role(namespace,&request.target, role).await?;
-
-        Ok(Some(role))
-    }
-
-    /// Grant a permission as admin. Requires a super-admin token scoped to
-    /// `request.namespace` (checked via `is_admin_for`).
     pub async fn admin_grant_permission(
         &self,
     namespace: &Uuid,
         request: PermissionReq,
-    ) -> Result<Option<u128>, SqlxError> {
-        Ok(self.admin_grant_unchecked(namespace,request).await?)
+    ) -> Result<Option<Uuid>, Box<dyn std::error::Error>> {
+        // Validate permission
+        if request.permission > 127 {
+            return Ok(None);
+        }
+        let grant = self.absolute_repo.list_one(filters!("to_id"=>&request.target,"namespace"=>namespace)).await?;
+        let update = grant.grant(request.permission);
+        self.absolute_repo.update(&grant.id,update.clone()).await?;
+        Ok(update.role)
     }
 
-    /// Deny (revoke) a permission as admin. Requires a super-admin token scoped
-    /// to `request.namespace`.
+    /// Revokes the permission in `request` from `request.target`'s absolute role.
+    /// Same caveat as `admin_grant_unchecked`: no auth check performed here.
     pub async fn admin_deny_permission(
         &self,
     namespace: &Uuid,
         request: PermissionReq,
-    ) -> Result<Option<u128>, SqlxError> {
-        Ok(self.admin_deny_unchecked(namespace,request).await?)
+    ) -> Result<Option<Uuid>, Box<dyn std::error::Error>> {
+        if request.permission > 127 {
+            return Ok(None);
+        }
+        let grant = self.absolute_repo.list_one(filters!("to_id"=>&request.target,"namespace"=>namespace)).await?;
+        let update = grant.deny(request.permission);
+        self.absolute_repo.update(&grant.id,update.clone()).await?;
+        Ok(update.role)
     }
+
+    
 
     pub async fn claim(
         &self,

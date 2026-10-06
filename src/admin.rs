@@ -9,10 +9,32 @@ use viewset::{DefaultRepo, DefaultViewSet, Entity, Service};
 pub struct Absolute {
     #[entity(skip_update)]
     pub id: Uuid,
+    #[entity(skip_update)]
     pub to_id: Uuid,
     /// Represent u128 permission bit map, represented as str since some db do not support u128
     pub role: Uuid,
+    #[entity(skip_update)]
     pub namespace: Uuid,
+}
+
+impl Absolute{
+    pub(crate) fn grant(&self, perm:u8)->UpdateAbsolute{
+        let current = self.role.as_u128();
+        let perm_value = 1 << perm;
+        let new = current | perm_value;
+        UpdateAbsolute{
+            role: Some(Uuid::from_u128(new)),
+        }
+    }
+    
+    pub(crate) fn deny(&self, perm:u8)->UpdateAbsolute{
+        let current = self.role.as_u128();
+        let perm_value = 1 << perm;
+        let new = current & !perm_value;
+        UpdateAbsolute{
+            role: Some(Uuid::from_u128(new)),
+        }
+    }
 }
 
 #[derive(FromRow, Deserialize, Serialize, Clone, Entity)]
@@ -24,10 +46,8 @@ pub struct Namespace {
 
 pub type NamespaceRepo = DefaultRepo<Namespace>;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize,Clone)]
 pub struct UpdateAbsolute {
-    pub namespace: Option<Uuid>,
-    pub to_id: Option<Uuid>,
     pub role: Option<Uuid>,
 }
 
