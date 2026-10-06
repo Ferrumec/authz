@@ -5,9 +5,9 @@ use uuid::Uuid;
 use viewset::{DefaultRepo, DefaultViewSet, Entity, Service};
 
 #[derive(FromRow, Deserialize, Serialize, Clone, Entity)]
-#[entity(table = "grants",create = "NewAbsolute", update = "UpdateAbsolute")]
+#[entity(table = "grants", create = "NewAbsolute", update = "UpdateAbsolute")]
 pub struct Absolute {
-    #[entity(skip_update,skip_create)]
+    #[entity(skip_update, skip_create)]
     pub id: Uuid,
     #[entity(skip_update)]
     pub to_id: Uuid,
@@ -17,7 +17,7 @@ pub struct Absolute {
     pub namespace: Uuid,
 }
 
-#[derive(Serialize, Deserialize,Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct NewAbsolute {
     pub to_id: Uuid,
     /// Represent u128 permission bit map, represented as str since some db do not support u128
@@ -25,21 +25,21 @@ pub struct NewAbsolute {
     pub namespace: Uuid,
 }
 
-impl Absolute{
-    pub(crate) fn grant(&self, perm:u8)->UpdateAbsolute{
+impl Absolute {
+    pub(crate) fn grant(&self, perm: u8) -> UpdateAbsolute {
         let current = self.role.as_u128();
         let perm_value = 1 << perm;
         let new = current | perm_value;
-        UpdateAbsolute{
+        UpdateAbsolute {
             role: Some(Uuid::from_u128(new)),
         }
     }
-    
-    pub(crate) fn deny(&self, perm:u8)->UpdateAbsolute{
+
+    pub(crate) fn deny(&self, perm: u8) -> UpdateAbsolute {
         let current = self.role.as_u128();
         let perm_value = 1 << perm;
         let new = current & !perm_value;
-        UpdateAbsolute{
+        UpdateAbsolute {
             role: Some(Uuid::from_u128(new)),
         }
     }
@@ -54,7 +54,7 @@ pub struct Namespace {
 
 pub type NamespaceRepo = DefaultRepo<Namespace>;
 
-#[derive(Serialize, Deserialize,Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct UpdateAbsolute {
     pub role: Option<Uuid>,
 }

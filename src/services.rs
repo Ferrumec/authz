@@ -1,5 +1,6 @@
 use crate::admin::AbsoluteRepo;
 use crate::admin::NamespaceRepo;
+use crate::admin::NewAbsolute;
 use crate::models::PermissionReq;
 use actixutils::filters;
 use actixutils::middleware::Authority;
@@ -7,7 +8,6 @@ use ferrumec::cache::{CacheFactory, Store};
 use sqlx::{Error as SqlxError, Pool, Postgres};
 use std::sync::Arc;
 use uuid::Uuid;
-use crate::admin::NewAbsolute;
 use viewset::{ApiError, Repository};
 
 #[derive(Clone)]
@@ -33,7 +33,7 @@ impl Service {
     pub async fn get_role(&self, to_id: &Uuid, namespace: &Uuid) -> Result<u128, SqlxError> {
         let grant = match self
             .absolute_repo
-            .list_one(filters!(namespace,to_id))
+            .list_one(filters!(namespace, to_id))
             .await
         {
             Ok(r) => r,
@@ -48,7 +48,7 @@ impl Service {
     /// `is_admin_for`) before calling this — it performs no auth check itself.
     pub async fn admin_grant_permission(
         &self,
-    namespace: &Uuid,
+        namespace: &Uuid,
         request: PermissionReq,
     ) -> Result<Option<Uuid>, Box<dyn std::error::Error>> {
         // Validate permission
@@ -56,39 +56,41 @@ impl Service {
             return Ok(None);
         }
         let to_id = &request.target;
-        let (grants,count) = self.absolute_repo.list(filters!(to_id,namespace)).await?;
-        if count > 0{
+        let (grants, count) = self.absolute_repo.list(filters!(to_id, namespace)).await?;
+        if count > 0 {
             let grant = grants[0].clone();
             let update = grant.grant(request.permission);
-        self.absolute_repo.update(&grant.id,update.clone()).await?;
-        Ok(update.role)
-        }else{
-            let grant = NewAbsolute{
-                to_id:to_id.clone(),namespace:namespace.clone(),role:Uuid::from_u128(1<<request.permission)
+            self.absolute_repo.update(&grant.id, update.clone()).await?;
+            Ok(update.role)
+        } else {
+            let grant = NewAbsolute {
+                to_id: to_id.clone(),
+                namespace: namespace.clone(),
+                role: Uuid::from_u128(1 << request.permission),
             };
             self.absolute_repo.create(grant.clone()).await?;
             Ok(Some(grant.role))
         }
-        
     }
 
     /// Revokes the permission in `request` from `request.target`'s absolute role.
     /// Same caveat as `admin_grant_unchecked`: no auth check performed here.
     pub async fn admin_deny_permission(
         &self,
-    namespace: &Uuid,
+        namespace: &Uuid,
         request: PermissionReq,
     ) -> Result<Option<Uuid>, Box<dyn std::error::Error>> {
         if request.permission > 127 {
             return Ok(None);
         }
-        let grant = self.absolute_repo.list_one(filters!("to_id"=>&request.target,"namespace"=>namespace)).await?;
+        let grant = self
+            .absolute_repo
+            .list_one(filters!("to_id"=>&request.target,"namespace"=>namespace))
+            .await?;
         let update = grant.deny(request.permission);
-        self.absolute_repo.update(&grant.id,update.clone()).await?;
+        self.absolute_repo.update(&grant.id, update.clone()).await?;
         Ok(update.role)
     }
-
-    
 
     pub async fn claim(
         &self,

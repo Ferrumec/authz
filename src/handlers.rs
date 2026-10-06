@@ -1,4 +1,3 @@
-use crate::Service;
 use crate::models::{AppState, PermissionReq};
 use actix_web::{HttpResponse, Responder, cookie::Cookie, post, web};
 use actixutils::extractors::ReadSession;
@@ -19,7 +18,7 @@ pub async fn grant_permission(
     {
         Ok(true) => match state
             .service
-            .admin_grant_permission(&authority.namespace,body.into_inner())
+            .admin_grant_permission(&authority.namespace, body.into_inner())
             .await
         {
             Ok(Some(r)) => HttpResponse::Ok().json(json!({
@@ -51,7 +50,11 @@ pub async fn deny_permission(
         .can_grant(authority.clone().into_inner(), body.permission)
         .await
     {
-        Ok(true) => match state.service.admin_deny_permission(&authority.namespace,body.clone()).await {
+        Ok(true) => match state
+            .service
+            .admin_deny_permission(&authority.namespace, body.clone())
+            .await
+        {
             Ok(Some(r)) => HttpResponse::Ok().json(json!({
                 "success": true,
                 "new_role": r
@@ -75,14 +78,14 @@ struct User {
 
 #[post("/claim/{namespace}")]
 pub async fn claim_permission(
-    service: web::Data<Service>,
+    service: web::Data<AppState>,
     sess: ReadSession<User>,
     path: web::Path<Uuid>,
 ) -> impl Responder {
     let namespace = path.into_inner();
     let id = sess.id;
 
-    let token = match service.claim(namespace, id).await {
+    let token = match service.service.claim(namespace, id).await {
         Ok(token) => token,
         Err(_) => return HttpResponse::InternalServerError().finish(),
     };
