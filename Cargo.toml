@@ -1,0 +1,17 @@
+[package]
+name = "authz"
+version = "0.1.2"
+edition = "2024"
+
+[dependencies]
+actix-web = "4.4"
+serde = { version = "1", features = ["derive"] }
+sqlx = { version = "0.9", features = ["postgres", "runtime-tokio", "tls-rustls", "chrono", "migrate", "uuid", "ipnetwork"] }
+uuid = { version = "1.7", features = ["v4", "serde"] }
+serde_json = "1.0.145"
+actixutils = { path = "../actixutils" }
+tracing = "0.1.44"
+async-trait = "0.1.89"
+viewset = { path = "../viewset" }
+awc = "3.8.2"
+ferrumec = { version = "0.3", features = ["distributed"] }
