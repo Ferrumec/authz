@@ -7,7 +7,8 @@ use viewset::{DefaultRepo, DefaultViewSet, Entity, Service};
 #[derive(FromRow, Deserialize, Serialize, Clone, Entity)]
 #[entity(table = "grants", update = "UpdateAbsolute")]
 pub struct Absolute {
-    #[entity(pk)]
+    #[entity(skip_update)]
+    pub id: Uuid,
     pub to_id: Uuid,
     /// Represent u128 permission bit map, represented as str since some db do not support u128
     pub role: Uuid,
@@ -16,9 +17,12 @@ pub struct Absolute {
 
 #[derive(FromRow, Deserialize, Serialize, Clone, Entity)]
 pub struct Namespace {
-    id: Uuid,
-    name: String,
+    pub(crate) id: Uuid,
+    pub(crate) owner: Uuid,
+    pub(crate) name: String,
 }
+
+pub type NamespaceRepo = DefaultRepo<Namespace>;
 
 #[derive(Serialize, Deserialize)]
 pub struct UpdateAbsolute {

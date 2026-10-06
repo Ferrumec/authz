@@ -24,7 +24,7 @@ impl AuthorizModule {
         permissions: PermissionSet,
     ) -> Self {
         let absolute_repo = Arc::new(AbsoluteRepo::new(db.clone(), cf.clone()));
-        let session_store = cf.new_cache("session_store", std::time::Duration::from_mins(30));
+        let session_store = cf.new_cache("permission_sessions", std::time::Duration::from_mins(30));
         let permissions = Permissions::new(permissions, session_store);
         Self {
             state: web::Data::new(AppState {
@@ -42,12 +42,12 @@ impl AuthorizModule {
         cfg.service(
             web::scope(namespace)
                 .app_data(self.state.clone())
-                .service(claim_admin)
+                .service(claim_permission)
                 .service(
                     web::scope("")
                         .wrap(self.permissions.clone())
-                        .service(admin_grant_permission)
-                        .service(admin_deny_permission)
+                        .service(grant_permission)
+                        .service(deny_permission)
                         .service(web::scope("admin").configure(|cfg| {
                             self.absolute_viewset.clone().configure(cfg, "grants")
                         })),
