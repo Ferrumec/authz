@@ -123,15 +123,24 @@ impl Service {
         Ok(self.admin_deny_unchecked(request).await?)
     }
 
-    pub async fn claim(&self, namespace: Uuid, user: Uuid) -> Result<Uuid, SqlxError> {
-        match self
+    pub async fn claim(
+        &self,
+        namespace: Uuid,
+        user: Uuid,
+    ) -> Result<Uuid, Box<dyn std::error::Error>> {
+        let role = match self
             .absolute_repo
             .list_one(filters!("namespace"=>namespace,"to_id"=>user))
             .await
         {
-            Ok(r) => Ok(r.role),
-            Err(ApiError::Database(e)) => return Err(e),
-            _ => Ok(Uuid::from_u128(0)),
-        }
+            Ok(r) => r.role.as_u128(),
+            Err(ApiError::Database(e)) => return Err(Box::new(e)),
+            _ => 0,
+        };
+
+        let authority = Authority { namespace, role };
+        let id = Uuid::new_v4();
+        self.session_store.set(&id, authority).await?;
+        Ok(id)
     }
 }
