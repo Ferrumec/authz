@@ -9,7 +9,7 @@ serde = { version = "1", features = ["derive"] }
 sqlx = { version = "0.9", features = ["postgres", "runtime-tokio", "tls-rustls", "chrono", "migrate", "uuid", "ipnetwork"] }
 uuid = { version = "1.7", features = ["v4", "serde"] }
 serde_json = "1.0.145"
-actixutils = { path = "../actixutils" }
+actixutils = { version = "0.8" }
 tracing = "0.1.44"
-viewset = { path = "../viewset" }
-ferrumec = { version = "0.3", features = ["distributed"] }
+viewset = { version = "0.5.2" }
+ferrumec = {version="0.4", features = ["distributed"] }

@@ -3,7 +3,7 @@ use crate::admin::NamespaceRepo;
 use crate::admin::NewAbsolute;
 use crate::models::PermissionReq;
 use actixutils::filters;
-use actixutils::middleware::Authority;
+use ferrumec::Authority;
 use ferrumec::cache::{CacheFactory, Store};
 use sqlx::{Error as SqlxError, Pool, Postgres};
 use std::sync::Arc;

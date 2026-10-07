@@ -1,7 +1,7 @@
 use crate::models::{AppState, PermissionReq};
 use actix_web::{HttpResponse, Responder, cookie::Cookie, post, web};
 use actixutils::extractors::ReadSession;
-use actixutils::middleware::Authority;
+use ferrumec::Authority;
 use serde_json::json;
 use uuid::Uuid;
 

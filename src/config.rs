@@ -1,7 +1,6 @@
 use crate::admin::{AbsoluteRepo, AbsoluteViewSet, create_absolute_viewset};
 use crate::{handlers::*, models::AppState, services::Service};
 use actix_web::web::{self, ServiceConfig};
-use actixutils::middleware::{PermissionSet, Permissions};
 use ferrumec::cache::CacheFactory;
 use sqlx::{Pool, Postgres};
 use std::sync::Arc;
@@ -11,7 +10,6 @@ use viewset::ViewSet;
 pub struct AuthorizModule {
     state: web::Data<AppState>,
     absolute_viewset: Arc<AbsoluteViewSet>,
-    permissions: Permissions,
 }
 
 impl AuthorizModule {
@@ -21,17 +19,13 @@ impl AuthorizModule {
     pub fn new<Cf: CacheFactory + 'static>(
         db: Pool<Postgres>,
         cf: Cf,
-        permissions: PermissionSet,
     ) -> Self {
         let absolute_repo = Arc::new(AbsoluteRepo::new(db.clone(), cf.clone()));
-        let session_store = cf.new_cache("permission_sessions", std::time::Duration::from_mins(30));
-        let permissions = Permissions::new(permissions, session_store);
         Self {
             state: web::Data::new(AppState {
                 service: Service::new(db, cf.clone()),
             }),
             absolute_viewset: create_absolute_viewset(absolute_repo),
-            permissions,
         }
     }
 
@@ -45,7 +39,6 @@ impl AuthorizModule {
                 .service(claim_permission)
                 .service(
                     web::scope("")
-                        .wrap(self.permissions.clone())
                         .service(grant_permission)
                         .service(deny_permission)
                         .service(web::scope("admin").configure(|cfg| {
