@@ -21,7 +21,7 @@ pub struct Service {
 impl Service {
     /// Builds a `Service` with its own freshly-constructed [`AbsoluteRepo`],
     /// caching via `cf`.
-    pub fn new<Cf: CacheFactory + 'static>(db: Pool<Postgres>, cf: Cf) -> Self {
+    pub fn new(db: Pool<Postgres>, cf: impl CacheFactory) -> Self {
         Self {
             db: db.clone(),
             absolute_repo: Arc::new(AbsoluteRepo::new(db.clone(), cf.clone())),
