@@ -11,5 +11,6 @@ uuid = { version = "1.7", features = ["v4", "serde"] }
 serde_json = "1.0.145"
 actixutils = { version = "0.8" }
 tracing = "0.1.44"
-viewset = { version = "0.5.2" }
+#viewset = { version = "0.5.2" }
 ferrumec = {version="0.4", features = ["distributed"] }
+viewset = { path = "../viewset", features =["web"] }

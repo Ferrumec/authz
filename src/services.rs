@@ -2,13 +2,13 @@ use crate::admin::AbsoluteRepo;
 use crate::admin::NamespaceRepo;
 use crate::admin::NewAbsolute;
 use crate::models::PermissionReq;
-use actixutils::filters;
 use ferrumec::Authority;
 use ferrumec::cache::{CacheFactory, Store};
 use sqlx::{Error as SqlxError, Pool, Postgres};
 use std::sync::Arc;
 use uuid::Uuid;
-use viewset::{ApiError, Repository};
+use viewset::Repository;
+use viewset::filters;
 
 #[derive(Clone)]
 pub struct Service {
@@ -37,8 +37,11 @@ impl Service {
             .await
         {
             Ok(r) => r,
-            Err(ApiError::Database(e)) => return Err(e),
-            _ => return Ok(0),
+
+            Err(e) => match e {
+                SqlxError::RowNotFound => return Ok(0),
+                _ => return Err(e),
+            },
         };
         Ok(grant.role.as_u128())
     }
@@ -103,8 +106,10 @@ impl Service {
             .await
         {
             Ok(r) => r.role.as_u128(),
-            Err(ApiError::Database(e)) => return Err(Box::new(e)),
-            _ => 0,
+            Err(e) => match e {
+                SqlxError::RowNotFound => 0,
+                _ => return Err(Box::new(e)),
+            },
         };
 
         let authority = Authority {

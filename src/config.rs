@@ -1,7 +1,7 @@
 use crate::admin::{AbsoluteRepo, AbsoluteViewSet, create_absolute_viewset};
 use crate::{handlers::*, models::AppState, services::Service};
 use actix_web::web::{self, ServiceConfig};
-use ferrumec::{Module,Infra};
+use ferrumec::{Infra, Module};
 use std::sync::Arc;
 use viewset::ViewSet;
 
@@ -15,11 +15,9 @@ impl Module for AuthorizModule {
     /// Builds the module, constructing a single [`AbsoluteRepo`] (via `cf`)
     /// that is shared between the grant/deny business logic ([`Service`])
     /// and the `/admin/grants` viewset, so both see the same cache.
-   async fn new(
-        infra: impl Infra
-    ) -> Result<Self,Box<dyn std::error::Error>> {
-         let db = infra.clone().database();
-        let cf= infra.cache_factory();
+    async fn new(infra: impl Infra) -> Result<Self, Box<dyn std::error::Error>> {
+        let db = infra.clone().database();
+        let cf = infra.cache_factory();
         let absolute_repo = Arc::new(AbsoluteRepo::new(db.clone(), cf.clone()));
         Ok(Self {
             state: web::Data::new(AppState {
@@ -32,7 +30,7 @@ impl Module for AuthorizModule {
     /// `claim_admin` stays outside the Permissions gate so any logged-in user
     /// can attempt it (and receive 404 / 406 when they are not the configured
     /// ADMIN). Grant / deny / grants viewset remain permission-checked.
-    fn configure(self:Arc<Self>, cfg: &mut ServiceConfig, namespace: &str) {
+    fn configure(self: Arc<Self>, cfg: &mut ServiceConfig, namespace: &str) {
         cfg.service(
             web::scope(namespace)
                 .app_data(self.state.clone())

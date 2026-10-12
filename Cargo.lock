@@ -533,6 +533,7 @@ dependencies = [
  "iana-time-zone",
  "js-sys",
  "num-traits",
+ "serde",
  "wasm-bindgen",
  "windows-link",
 ]
@@ -1442,6 +1443,9 @@ name = "ipnetwork"
 version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf370abdafd54d13e54a620e8c3e1145f28e46cc9d704bc6d94414559df41763"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "itoa"
@@ -3046,15 +3050,13 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 [[package]]
 name = "viewset"
 version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b404fff18d4fd16e6a18fae75665bfb7ca7089e096b539037bb448f3826ed06c"
 dependencies = [
  "actix-web",
- "actixutils",
  "async-trait",
  "chrono",
  "ferrumec",
- "moka",
+ "futures-util",
+ "ipnetwork",
  "rust_decimal",
  "serde",
  "serde_json",
@@ -3068,8 +3070,6 @@ dependencies = [
 [[package]]
 name = "viewset-macros"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b7503c2519893f103f8867d59775d3aa1f5ff0d737bb7fb225ec31fad4583d8"
 dependencies = [
  "proc-macro2",
  "quote",
