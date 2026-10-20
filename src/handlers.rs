@@ -79,11 +79,11 @@ struct User {
 #[post("/claim/{namespace}")]
 pub async fn claim_permission(
     service: web::Data<AppState>,
-    sess: ReadSession<User>,
+    sess: web::ReqData<viewset::web::Identity>,
     path: web::Path<Uuid>,
 ) -> impl Responder {
     let namespace = path.into_inner();
-    let id = sess.id;
+    let id = sess.sub;
 
     let token = match service.service.claim(namespace, id).await {
         Ok(token) => token,

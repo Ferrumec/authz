@@ -9,11 +9,11 @@ use viewset::{DefaultRepo, DefaultViewSet, Entity, Service};
 pub struct Absolute {
     #[entity(skip_update, skip_create)]
     pub id: Uuid,
-    #[entity(skip_update)]
+    #[entity(skip_update, filterable)]
     pub to_id: Uuid,
     /// Represent u128 permission bit map, represented as str since some db do not support u128
     pub role: Uuid,
-    #[entity(skip_update)]
+    #[entity(skip_update, filterable)]
     pub namespace: Uuid,
 }
 
