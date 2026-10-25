@@ -54,10 +54,6 @@ impl Service {
         namespace: &Uuid,
         request: PermissionReq,
     ) -> Result<Option<Uuid>, Box<dyn std::error::Error>> {
-        // Validate permission
-        if request.permission > 127 {
-            return Ok(None);
-        }
         let to_id = &request.target;
         let (grants, count) = self.absolute_repo.list(filters!(to_id, namespace)).await?;
         if count > 0 {
@@ -69,7 +65,7 @@ impl Service {
             let grant = NewAbsolute {
                 to_id: to_id.clone(),
                 namespace: namespace.clone(),
-                role: Uuid::from_u128(1 << request.permission),
+                role: request.permission,
             };
             self.absolute_repo.create(grant.clone()).await?;
             Ok(Some(grant.role))
@@ -83,9 +79,6 @@ impl Service {
         namespace: &Uuid,
         request: PermissionReq,
     ) -> Result<Option<Uuid>, Box<dyn std::error::Error>> {
-        if request.permission > 127 {
-            return Ok(None);
-        }
         let grant = self
             .absolute_repo
             .list_one(filters!("to_id"=>&request.target,"namespace"=>namespace))
@@ -125,7 +118,7 @@ impl Service {
     pub async fn can_grant(
         &self,
         authority: Authority,
-        perm_id: u8,
+        perm_value: Uuid,
     ) -> Result<bool, Box<dyn std::error::Error>> {
         let namespace = self.namespace_repo.retrieve(&authority.namespace).await?;
         if namespace.owner != authority.user {
@@ -137,6 +130,6 @@ impl Service {
             .list_one(filters!("to_id"=>authority.user,"namespace"=>authority.namespace))
             .await?;
 
-        Ok(grant.has(perm_id))
+        Ok(grant.has(perm_value))
     }
 }

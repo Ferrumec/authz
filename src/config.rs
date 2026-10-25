@@ -3,13 +3,13 @@ use crate::{handlers::*, models::AppState, services::Service};
 use actix_web::web::{self, ServiceConfig};
 use ferrumec::{Infra, Module};
 use std::sync::Arc;
-use viewset::{web::SessionMiddleware,ViewSet};
+use viewset::{ViewSet, web::SessionMiddleware};
 
 #[derive(Clone)]
 pub struct AuthorizModule {
     state: web::Data<AppState>,
     absolute_viewset: Arc<AbsoluteViewSet>,
-    middleware:Arc<SessionMiddleware>
+    middleware: Arc<SessionMiddleware>,
 }
 
 impl Module for AuthorizModule {
@@ -36,7 +36,7 @@ impl Module for AuthorizModule {
     fn configure(self: Arc<Self>, cfg: &mut ServiceConfig, namespace: &str) {
         cfg.service(
             web::scope(namespace)
-        .wrap(self.middleware.clone())
+                .wrap(self.middleware.clone())
                 .app_data(self.state.clone())
                 .service(claim_permission)
                 .service(

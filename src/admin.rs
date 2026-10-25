@@ -26,26 +26,24 @@ pub struct NewAbsolute {
 }
 
 impl Absolute {
-    pub(crate) fn grant(&self, perm: u8) -> UpdateAbsolute {
+    pub(crate) fn grant(&self, perm_value: Uuid) -> UpdateAbsolute {
         let current = self.role.as_u128();
-        let perm_value = 1 << perm;
-        let new = current | perm_value;
+        let new = current | perm_value.as_u128();
         UpdateAbsolute {
             role: Some(Uuid::from_u128(new)),
         }
     }
 
-    pub(crate) fn deny(&self, perm: u8) -> UpdateAbsolute {
+    pub(crate) fn deny(&self, perm_value: Uuid) -> UpdateAbsolute {
         let current = self.role.as_u128();
-        let perm_value = 1 << perm;
-        let new = current & !perm_value;
+        let new = current & !perm_value.as_u128();
         UpdateAbsolute {
             role: Some(Uuid::from_u128(new)),
         }
     }
 
-    pub(crate) fn has(&self, perm: u8) -> bool {
-        let value = 1 << perm;
+    pub(crate) fn has(&self, value: Uuid) -> bool {
+        let value = value.as_u128();
         self.role.as_u128() & value == value
     }
 }
