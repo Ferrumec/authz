@@ -127,6 +127,25 @@ pub async fn create_namespace(
     }
 }
 
+#[post("/namespaces/bootstrap")]
+pub async fn bootstrap_namespace(
+    service: web::Data<AppState>,
+    sess: viewset::web::Identity,
+    path: web::Json<CreateNamespace>,
+) -> impl Responder {
+    match service
+        .service
+        .bootstrap_namespace(sess.sub, path.name.clone())
+        .await
+    {
+        Ok(result) => HttpResponse::Ok().json(result),
+        Err(e) => {
+            tracing::error!("failed to create namespace: {e}");
+            HttpResponse::InternalServerError().finish()
+        }
+    }
+}
+
 #[get("/namespaces")]
 pub async fn list_namespaces(
     service: web::Data<AppState>,
