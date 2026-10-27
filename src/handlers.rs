@@ -1,6 +1,6 @@
 use crate::models::{AppState, PermissionReq};
 use actix_web::{HttpResponse, Responder, cookie::Cookie, get, post, web};
-use ferrumec::Authority;
+use ferrumec_perms::Authority;
 use serde_json::json;
 use uuid::Uuid;
 

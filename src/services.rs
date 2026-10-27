@@ -1,10 +1,9 @@
 use crate::admin::AbsoluteRepo;
 use crate::admin::Namespace;
 use crate::admin::NamespaceRepo;
-use crate::admin::NewAbsolute;
 use crate::models::PermissionReq;
-use ferrumec::Authority;
-use ferrumec::cache::{CacheFactory, Store};
+use ferrumec_perms::{Authority,AuthzControls};
+use ferrumec::cache::CacheFactory;
 use sqlx::{Error as SqlxError, Pool, Postgres};
 use std::sync::Arc;
 use uuid::Uuid;
@@ -16,25 +15,24 @@ pub struct Service {
     pub db: Pool<Postgres>,
     pub absolute_repo: Arc<AbsoluteRepo>,
     pub namespace_repo: Arc<NamespaceRepo>,
-    pub(crate) session_store: Arc<dyn Store<Uuid, Authority>>,
-}
+    }
 
 impl Service {
     /// Builds a `Service` with its own freshly-constructed [`AbsoluteRepo`],
     /// caching via `cf`.
     pub fn new(db: Pool<Postgres>, cf: impl CacheFactory) -> Self {
+        let absolute_repo = Arc::new(AbsoluteRepo::new(db.clone(), cf.clone()));
         Self {
             db: db.clone(),
-            absolute_repo: Arc::new(AbsoluteRepo::new(db.clone(), cf.clone())),
+            absolute_repo:absolute_repo.clone(),
             namespace_repo: Arc::new(NamespaceRepo::new(db, cf.clone())),
-            session_store: cf.new_cache("permission_sessions", std::time::Duration::from_mins(30)),
         }
     }
 
-    pub async fn get_role(&self, to_id: &Uuid, namespace: &Uuid) -> Result<u128, SqlxError> {
+    pub async fn get_role(&self, user: &Uuid, namespace: &Uuid) -> Result<u128, SqlxError> {
         let grant = match self
             .absolute_repo
-            .list_one(filters!(namespace, to_id))
+            .list_one(filters!(namespace, user))
             .await
         {
             Ok(r) => r,
@@ -55,16 +53,16 @@ impl Service {
         namespace: &Uuid,
         request: PermissionReq,
     ) -> Result<Option<Uuid>, Box<dyn std::error::Error>> {
-        let to_id = &request.target;
-        let (grants, count) = self.absolute_repo.list(filters!(to_id, namespace)).await?;
+        let user = &request.target;
+        let (grants, count) = self.absolute_repo.list(filters!(user, namespace)).await?;
         if count > 0 {
             let grant = grants[0].clone();
             let update = grant.grant(request.permission);
             self.absolute_repo.update(&grant.id, update.clone()).await?;
             Ok(update.role)
         } else {
-            let grant = NewAbsolute {
-                to_id: to_id.clone(),
+            let grant = Authority {
+                user:user.clone(),
                 namespace: namespace.clone(),
                 role: request.permission,
             };
@@ -82,7 +80,7 @@ impl Service {
     ) -> Result<Option<Uuid>, Box<dyn std::error::Error>> {
         let grant = self
             .absolute_repo
-            .list_one(filters!("to_id"=>&request.target,"namespace"=>namespace))
+            .list_one(filters!("user"=>&request.target,"namespace"=>namespace))
             .await?;
         let update = grant.deny(request.permission);
         self.absolute_repo.update(&grant.id, update.clone()).await?;
@@ -96,24 +94,14 @@ impl Service {
     ) -> Result<Uuid, Box<dyn std::error::Error>> {
         let role = match self
             .absolute_repo
-            .list_one(filters!("namespace"=>namespace,"to_id"=>user.clone()))
+            .list_one(filters!(namespace,user))
             .await
         {
-            Ok(r) => r.role.as_u128(),
-            Err(e) => match e {
-                SqlxError::RowNotFound => 0,
-                _ => return Err(Box::new(e)),
-            },
+            Ok(r) => r,
+            Err(e) => return Err(Box::new(e)),
         };
-
-        let authority = Authority {
-            namespace,
-            role,
-            user,
-        };
-        let id = Uuid::new_v4();
-        self.session_store.set(&id, authority).await?;
-        Ok(id)
+        
+        Ok(role.id)
     }
 
     pub async fn can_grant(
@@ -128,7 +116,7 @@ impl Service {
 
         let grant = self
             .absolute_repo
-            .list_one(filters!("to_id"=>authority.user,"namespace"=>authority.namespace))
+            .list_one(filters!("user"=>authority.user,"namespace"=>authority.namespace))
             .await?;
 
         Ok(grant.has(perm_value))

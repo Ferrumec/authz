@@ -11,5 +11,6 @@ uuid = { version = "1.7", features = ["v4", "serde"] }
 serde_json = "1.0.145"
 actixutils = { version = "0.8" }
 tracing = "0.1.44"
-ferrumec = { version ="0.4", features = ["pg","web"] }
-viewset = { version = "0.6.5", features =["web"] }
+ferrumec = { version ="0.5", features = ["pg","web"] }
+viewset = { version = "0.6.6", features =["web"] }
+ferrumec-perms = "0.1.0"
