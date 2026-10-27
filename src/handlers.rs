@@ -28,7 +28,10 @@ pub async fn grant_permission(
                 "success": false,
                 "error": "invalid operation"
             })),
-            Err(_e) => HttpResponse::InternalServerError().finish(),
+            Err(e) => {
+                tracing::error!("failed to grant permission: {e}");
+                HttpResponse::InternalServerError().finish()
+            }
         },
         Ok(false) => HttpResponse::Forbidden().finish(),
         Err(e) => {
@@ -61,7 +64,10 @@ pub async fn deny_permission(
             Ok(None) => HttpResponse::NotAcceptable().body(
                 "Error in denying permission, please confirm that the permission was granted",
             ),
-            Err(_e) => HttpResponse::InternalServerError().finish(),
+            Err(e) => {
+                tracing::error!("failed to deny permission: {e}");
+                HttpResponse::InternalServerError().finish()
+            }
         },
         Ok(false) => HttpResponse::Forbidden().finish(),
         Err(e) => {
@@ -87,7 +93,10 @@ pub async fn claim_permission(
 
     let token = match service.service.claim(namespace, id).await {
         Ok(token) => token,
-        Err(_) => return HttpResponse::InternalServerError().finish(),
+        Err(e) => {
+            tracing::error!("failed to claim permission: {e}");
+            return HttpResponse::InternalServerError().finish();
+        }
     };
 
     let cookie = Cookie::build("permission", token.to_string())

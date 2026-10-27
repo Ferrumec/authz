@@ -2,8 +2,8 @@ use crate::admin::AbsoluteRepo;
 use crate::admin::Namespace;
 use crate::admin::NamespaceRepo;
 use crate::models::PermissionReq;
-use ferrumec_perms::{Authority,AuthzControls};
 use ferrumec::cache::CacheFactory;
+use ferrumec_perms::{Authority, AuthzControls};
 use sqlx::{Error as SqlxError, Pool, Postgres};
 use std::sync::Arc;
 use uuid::Uuid;
@@ -15,7 +15,7 @@ pub struct Service {
     pub db: Pool<Postgres>,
     pub absolute_repo: Arc<AbsoluteRepo>,
     pub namespace_repo: Arc<NamespaceRepo>,
-    }
+}
 
 impl Service {
     /// Builds a `Service` with its own freshly-constructed [`AbsoluteRepo`],
@@ -24,17 +24,13 @@ impl Service {
         let absolute_repo = Arc::new(AbsoluteRepo::new(db.clone(), cf.clone()));
         Self {
             db: db.clone(),
-            absolute_repo:absolute_repo.clone(),
+            absolute_repo: absolute_repo.clone(),
             namespace_repo: Arc::new(NamespaceRepo::new(db, cf.clone())),
         }
     }
 
     pub async fn get_role(&self, user: &Uuid, namespace: &Uuid) -> Result<u128, SqlxError> {
-        let grant = match self
-            .absolute_repo
-            .list_one(filters!(namespace, user))
-            .await
-        {
+        let grant = match self.absolute_repo.list_one(filters!(namespace, user)).await {
             Ok(r) => r,
 
             Err(e) => match e {
@@ -62,7 +58,7 @@ impl Service {
             Ok(update.role)
         } else {
             let grant = Authority {
-                user:user.clone(),
+                user: user.clone(),
                 namespace: namespace.clone(),
                 role: request.permission,
             };
@@ -92,15 +88,11 @@ impl Service {
         namespace: Uuid,
         user: Uuid,
     ) -> Result<Uuid, Box<dyn std::error::Error>> {
-        let role = match self
-            .absolute_repo
-            .list_one(filters!(namespace,user))
-            .await
-        {
+        let role = match self.absolute_repo.list_one(filters!(namespace, user)).await {
             Ok(r) => r,
             Err(e) => return Err(Box::new(e)),
         };
-        
+
         Ok(role.id)
     }
 

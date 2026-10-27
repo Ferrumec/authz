@@ -23,8 +23,6 @@ pub struct CreateNamespace {
 
 pub type NamespaceRepo = DefaultRepo<Namespace>;
 
-
-
 /// Data access for [`Absolute`] grants, plus its item/list caches.
 ///
 /// Mirrors the pattern used by the groups service's repositories (e.g.
