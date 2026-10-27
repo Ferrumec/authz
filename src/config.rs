@@ -39,13 +39,13 @@ impl Module for AuthorizModule {
                 .wrap(self.middleware.clone())
                 .app_data(self.state.clone())
                 .service(claim_permission)
+                .service(create_namespace)
+                .service(list_namespaces)
+                .service(grant_permission)
+                .service(deny_permission)
                 .service(
-                    web::scope("")
-                        .service(grant_permission)
-                        .service(deny_permission)
-                        .service(web::scope("admin").configure(|cfg| {
-                            self.absolute_viewset.clone().configure(cfg, "grants")
-                        })),
+                    web::scope("admin")
+                        .configure(|cfg| self.absolute_viewset.clone().configure(cfg, "grants")),
                 ),
         );
     }

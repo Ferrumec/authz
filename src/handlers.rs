@@ -1,5 +1,5 @@
 use crate::models::{AppState, PermissionReq};
-use actix_web::{HttpResponse, Responder, cookie::Cookie, post, web};
+use actix_web::{HttpResponse, Responder, cookie::Cookie, get, post, web};
 use ferrumec::Authority;
 use serde_json::json;
 use uuid::Uuid;
@@ -8,11 +8,11 @@ use uuid::Uuid;
 pub async fn grant_permission(
     state: web::Data<AppState>,
     body: web::Json<PermissionReq>,
-    authority: web::ReqData<Authority>,
+    authority: Authority,
 ) -> HttpResponse {
     match state
         .service
-        .can_grant(authority.clone().into_inner(), body.permission)
+        .can_grant(authority.clone(), body.permission)
         .await
     {
         Ok(true) => match state
@@ -42,11 +42,11 @@ pub async fn grant_permission(
 pub async fn deny_permission(
     state: web::Data<AppState>,
     body: web::Json<PermissionReq>,
-    authority: web::ReqData<Authority>,
+    authority: Authority,
 ) -> HttpResponse {
     match state
         .service
-        .can_grant(authority.clone().into_inner(), body.permission)
+        .can_grant(authority.clone(), body.permission)
         .await
     {
         Ok(true) => match state
@@ -71,14 +71,15 @@ pub async fn deny_permission(
     }
 }
 
-struct User {
-    id: Uuid,
+#[derive(serde::Deserialize)]
+struct CreateNamespace {
+    name: String,
 }
 
 #[post("/claim/{namespace}")]
 pub async fn claim_permission(
     service: web::Data<AppState>,
-    sess: web::ReqData<viewset::web::Identity>,
+    sess: viewset::web::Identity,
     path: web::Path<Uuid>,
 ) -> impl Responder {
     let namespace = path.into_inner();
@@ -96,4 +97,40 @@ pub async fn claim_permission(
         .finish();
 
     HttpResponse::Ok().cookie(cookie).finish()
+}
+
+#[post("/namespaces")]
+pub async fn create_namespace(
+    service: web::Data<AppState>,
+    sess: viewset::web::Identity,
+    path: web::Json<CreateNamespace>,
+) -> impl Responder {
+    match service
+        .service
+        .create_namespace(sess.sub, path.name.clone())
+        .await
+    {
+        Ok(result) => HttpResponse::Ok().json(result),
+        Err(e) => {
+            tracing::error!("failed to create namespace: {e}");
+            HttpResponse::InternalServerError().finish()
+        }
+    }
+}
+
+#[get("/namespaces")]
+pub async fn list_namespaces(
+    service: web::Data<AppState>,
+    sess: viewset::web::Identity,
+    filters: web::Query<viewset::Filters>,
+) -> impl Responder {
+    let mut filters = filters.into_inner();
+    filters.insert("owner".to_string(), sess.sub.to_string());
+    match service.service.get_namespaces(&filters).await {
+        Ok(result) => HttpResponse::Ok().json(result),
+        Err(e) => {
+            tracing::error!("failed to create namespace: {e}");
+            HttpResponse::InternalServerError().finish()
+        }
+    }
 }

@@ -1,4 +1,5 @@
 use crate::admin::AbsoluteRepo;
+use crate::admin::Namespace;
 use crate::admin::NamespaceRepo;
 use crate::admin::NewAbsolute;
 use crate::models::PermissionReq;
@@ -131,5 +132,23 @@ impl Service {
             .await?;
 
         Ok(grant.has(perm_value))
+    }
+
+    pub async fn create_namespace(
+        &self,
+        owner: Uuid,
+        name: String,
+    ) -> Result<Namespace, Box<dyn std::error::Error>> {
+        Ok(self
+            .namespace_repo
+            .create(crate::admin::CreateNamespace { owner, name })
+            .await?)
+    }
+
+    pub async fn get_namespaces(
+        &self,
+        owner: &viewset::Filters,
+    ) -> Result<(Vec<Namespace>, i64), Box<dyn std::error::Error>> {
+        Ok(self.namespace_repo.list(owner).await?)
     }
 }

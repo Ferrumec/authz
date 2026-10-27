@@ -49,8 +49,16 @@ impl Absolute {
 }
 
 #[derive(FromRow, Deserialize, Serialize, Clone, Entity)]
+#[entity(create = "CreateNamespace")]
 pub struct Namespace {
+    #[entity(skip_create)]
     pub(crate) id: Uuid,
+    pub(crate) owner: Uuid,
+    pub(crate) name: String,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct CreateNamespace {
     pub(crate) owner: Uuid,
     pub(crate) name: String,
 }
