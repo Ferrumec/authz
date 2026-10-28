@@ -2,7 +2,7 @@ use crate::services::Service;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct PermissionReq {
     pub permission: Uuid,
     pub target: Uuid,

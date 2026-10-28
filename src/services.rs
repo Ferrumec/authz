@@ -137,16 +137,19 @@ impl Service {
         owner: Uuid,
         name: String,
     ) -> Result<Namespace, Box<dyn std::error::Error>> {
-        let has_rows: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM namespaces)")
+        let has_rows: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM grants)")
             .fetch_one(self.absolute_repo.database())
             .await?;
 
         if has_rows {
             return Err("Namespaces is already bootstrapped".into());
         }
+
+        let mut tx = self.absolute_repo.transaction().await?;
+
         let namespace = self
             .namespace_repo
-            .create(crate::admin::CreateNamespace { owner, name })
+            .create_in_tx(&mut tx, crate::admin::CreateNamespace { owner, name })
             .await?;
 
         let authority = Authority {
@@ -155,7 +158,8 @@ impl Service {
             role: Uuid::from_u128(u128::MAX),
         };
 
-        self.absolute_repo.create(authority).await?;
+        self.absolute_repo.create_in_tx(&mut tx, authority).await?;
+        tx.commit().await?;
         Ok(namespace)
     }
 

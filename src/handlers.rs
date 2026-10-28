@@ -10,6 +10,10 @@ pub async fn grant_permission(
     body: web::Json<PermissionReq>,
     authority: Authority,
 ) -> HttpResponse {
+    if body.target == authority.sub {
+        return HttpResponse::BadRequest().body("you don't need to grant permission to yourself");
+    };
+
     match state
         .service
         .can_grant(authority.clone(), body.permission)
@@ -33,7 +37,10 @@ pub async fn grant_permission(
                 HttpResponse::InternalServerError().finish()
             }
         },
-        Ok(false) => HttpResponse::Forbidden().finish(),
+        Ok(false) => {
+            tracing::info!(permission = %body.permission, role = %authority.role, "grant blocked");
+            HttpResponse::Forbidden().finish()
+        }
         Err(e) => {
             tracing::error!("could not confirm permission: {e}");
             HttpResponse::InternalServerError().finish()
