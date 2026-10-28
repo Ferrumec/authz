@@ -111,12 +111,12 @@ pub async fn claim_permission(
 #[post("/namespaces")]
 pub async fn create_namespace(
     service: web::Data<AppState>,
-    sess: viewset::web::Identity,
+    sess: Authority,
     path: web::Json<CreateNamespace>,
 ) -> impl Responder {
     match service
         .service
-        .create_namespace(sess.sub, path.name.clone())
+        .create_namespace(sess, path.name.clone())
         .await
     {
         Ok(result) => HttpResponse::Ok().json(result),

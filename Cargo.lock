@@ -835,8 +835,6 @@ dependencies = [
 [[package]]
 name = "ferrumec-perms"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14e548d0b4fdd43ee31603541fe46ede4205b583e52c49a4555eaa18ef2706c8"
 dependencies = [
  "actix-web",
  "ferrumec 0.5.0",

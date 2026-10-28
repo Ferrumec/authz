@@ -40,6 +40,7 @@ impl Module for AuthorizModule {
                 .app_data(self.state.clone())
                 .service(claim_permission)
                 .service(create_namespace)
+                .service(bootstrap_namespace)
                 .service(list_namespaces)
                 .service(grant_permission)
                 .service(deny_permission)

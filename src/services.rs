@@ -58,7 +58,7 @@ impl Service {
             Ok(update.role)
         } else {
             let grant = Authority {
-                user: user.clone(),
+                sub: user.clone(),
                 namespace: namespace.clone(),
                 role: request.permission,
             };
@@ -86,9 +86,9 @@ impl Service {
     pub async fn claim(
         &self,
         namespace: Uuid,
-        user: Uuid,
+        sub: Uuid,
     ) -> Result<Uuid, Box<dyn std::error::Error>> {
-        let role = match self.absolute_repo.list_one(filters!(namespace, user)).await {
+        let role = match self.absolute_repo.list_one(filters!(namespace, sub)).await {
             Ok(r) => r,
             Err(e) => return Err(Box::new(e)),
         };
@@ -102,13 +102,13 @@ impl Service {
         perm_value: Uuid,
     ) -> Result<bool, Box<dyn std::error::Error>> {
         let namespace = self.namespace_repo.retrieve(&authority.namespace).await?;
-        if namespace.owner != authority.user {
+        if namespace.owner != authority.sub {
             return Ok(false);
         }
 
         let grant = self
             .absolute_repo
-            .list_one(filters!("user"=>authority.user,"namespace"=>authority.namespace))
+            .list_one(filters!("user"=>authority.sub,"namespace"=>authority.namespace))
             .await?;
 
         Ok(grant.has(perm_value))
@@ -116,13 +116,20 @@ impl Service {
 
     pub async fn create_namespace(
         &self,
-        owner: Uuid,
+        owner: Authority,
         name: String,
     ) -> Result<Namespace, Box<dyn std::error::Error>> {
-        Ok(self
+        let mut authority = owner.clone();
+        let namespace = self
             .namespace_repo
-            .create(crate::admin::CreateNamespace { owner, name })
-            .await?)
+            .create(crate::admin::CreateNamespace {
+                owner: owner.sub,
+                name,
+            })
+            .await?;
+        authority.namespace = namespace.id;
+        self.absolute_repo.create(authority).await?;
+        Ok(namespace)
     }
 
     pub async fn bootstrap_namespace(
@@ -143,7 +150,7 @@ impl Service {
             .await?;
 
         let authority = Authority {
-            user: owner,
+            sub: owner,
             namespace: namespace.id,
             role: Uuid::from_u128(u128::MAX),
         };

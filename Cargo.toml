@@ -13,4 +13,4 @@ actixutils = { version = "0.8" }
 tracing = "0.1.44"
 ferrumec = { version ="0.5", features = ["pg","web"] }
 viewset = { version = "0.6.6", features =["web"] }
-ferrumec-perms = "0.1.0"
+ferrumec-perms = {path="../permissions"}

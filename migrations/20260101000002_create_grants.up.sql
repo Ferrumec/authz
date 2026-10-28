@@ -7,7 +7,7 @@
 
 CREATE TABLE grants (
     id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    to_id     UUID NOT NULL,
+    sub     UUID NOT NULL,
     role      UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000',
     namespace UUID NOT NULL REFERENCES namespaces (id) ON DELETE CASCADE
 );
